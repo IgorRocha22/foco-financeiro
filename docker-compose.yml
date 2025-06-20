@@ -1,0 +1,44 @@
+# Arquivo: docker-compose.yml (na raiz do seu projeto geral, ou onde fizer sentido)
+# Descrição: Orquestra os contêineres para desenvolvimento e teste local.
+
+version: '3.8'
+
+services:
+  # Serviço do Banco de Dados PostgreSQL
+  database:
+    image: postgres:14-alpine
+    container_name: foco-financeiro-db
+    ports:
+      - "5432:5432" # Mapeia a porta do container para a sua máquina local (opcional)
+    environment:
+      - POSTGRES_USER=focofinanceiro
+      - POSTGRES_PASSWORD=senha_super_segura
+      - POSTGRES_DB=focofinanceiro_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Garante que os dados persistam
+
+  # Serviço do Backend (API)
+  backend:
+    build: ./foco-financeiro-backend # Caminho para a pasta com o Dockerfile da API
+    container_name: foco-financeiro-api
+    ports:
+      - "8080:8080"
+    environment:
+      # Configurações para conectar ao serviço 'database'
+      - JDBC_DATABASE_URL=jdbc:postgresql://database:5432/focofinanceiro_db
+      - JDBC_DATABASE_USERNAME=focofinanceiro
+      - JDBC_DATABASE_PASSWORD=senha_super_segura
+      - JWT_SECRET=wJzR4t7w!z%C*F-JaNdRfUjXn2r5u8x/A?D(G+KbPeShVmYq3s6v9y$B&E)H@McQ # Usar um segredo seguro
+    depends_on:
+      - database # Garante que o banco de dados inicie antes da API
+
+  # Serviço do Frontend (App React)
+  frontend:
+    build: ./foco-financeiro-frontend # Caminho para a pasta com o Dockerfile do React
+    container_name: foco-financeiro-web
+    ports:
+      - "3000:80" # Acessaremos nossa aplicação em http://localhost:3000
+
+# Volume nomeado para persistir os dados do banco de dados
+volumes:
+  postgres_data:
